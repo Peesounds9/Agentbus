@@ -1,0 +1,26 @@
+{
+  "name": "agentbus",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AgentBus — a typed pub/sub message bus for AI trading agents, built for Bitget Agent Hub",
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "dev": "pnpm -r --parallel dev",
+    "test": "pnpm -r run test",
+    "smoke": "node scripts/smoke.mjs",
+    "demo": "node scripts/demo-paper-session.mjs",
+    "backtest": "node scripts/run-backtest.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["bitget", "agent-hub", "mcp", "trading", "agents", "pub-sub"],
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.7",
+    "tsx": "^4.7.2",
+    "vitest": "^1.5.0"
+  }
+}
