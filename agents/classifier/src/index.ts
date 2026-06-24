@@ -84,9 +84,22 @@ export class QwenClassifier {
   private timeoutMs: number;
 
   constructor(opts: ClassifierOptions) {
-    this.endpoint = opts.endpoint ?? process.env.QWEN_ENDPOINT ?? 'https://hackathon.bitgetops.com/v1';
-    this.model = opts.model ?? process.env.QWEN_MODEL ?? 'qwen3.6-plus';
-    this.apiKey = opts.apiKey ?? process.env.BITGET_QWEN_API_KEY ?? '';
+    this.endpoint = opts.endpoint
+      ?? process.env.QWEN_ENDPOINT
+      ?? process.env.OPENAI_BASE_URL                              // OpenAI-compatible override
+      ?? process.env.BITGET_QWEN_ENDPOINT
+      ?? (process.env.OPENAI_API_KEY ? 'https://api.openai.com/v1'
+         : process.env.BITGET_QWEN_API_KEY ? 'https://hackathon.bitgetops.com/v1'
+         : '');
+    this.model = opts.model
+      ?? process.env.QWEN_MODEL
+      ?? process.env.OPENAI_MODEL
+      ?? 'gpt-4o-mini';                                            // sensible default for OpenAI users
+    this.apiKey = opts.apiKey
+      ?? process.env.OPENAI_API_KEY
+      ?? process.env.QWEN_API_KEY
+      ?? process.env.BITGET_QWEN_API_KEY
+      ?? '';
     this.dropThreshold = opts.dropThreshold ?? 0.4;
     this.timeoutMs = opts.timeoutMs ?? 8000;
   }

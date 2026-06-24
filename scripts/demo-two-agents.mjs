@@ -10,6 +10,7 @@
  *   node scripts/demo-two-agents.mjs
  *   node scripts/demo-two-agents.mjs --port=8787 --cash=10000 --inject
  *   BITGET_QWEN_API_KEY=sk-xxx node scripts/demo-two-agents.mjs  # uses real Qwen
+ *   OPENAI_API_KEY=sk-xxx    node scripts/demo-two-agents.mjs  # uses OpenAI (any compatible)
  */
 
 import { CoopDemo } from '../agents/coop-demo/dist/index.js';
@@ -41,7 +42,7 @@ const demo = new CoopDemo({
   paperCashUsdt: cash,
   logPath: log,
   dashboardPort: runOnce ? 0 : port,
-  qwenApiKey: process.env.BITGET_QWEN_API_KEY,
+  qwenApiKey: process.env.OPENAI_API_KEY ?? process.env.BITGET_QWEN_API_KEY,
 });
 console.log('[demo] before start');
 await demo.start();
@@ -50,7 +51,9 @@ console.log('[demo] after start');
 console.log(`[demo] bus id = ${demo.bus.id}`);
 console.log(`[demo] dashboard: http://localhost:${port}`);
 console.log(`[demo] log: ${log}`);
-console.log(`[demo] agents: ${demo.bus.inspect().subscribers} subscribers, classifier=${!!process.env.BITGET_QWEN_API_KEY ? 'qwen' : 'heuristic'}`);
+const _key = process.env.OPENAI_API_KEY ?? process.env.BITGET_QWEN_API_KEY;
+const _endpoint = process.env.OPENAI_BASE_URL ?? (process.env.OPENAI_API_KEY ? 'openai' : process.env.BITGET_QWEN_API_KEY ? 'qwen' : 'heuristic');
+console.log(`[demo] agents: ${demo.bus.inspect().subscribers} subscribers, classifier=${_endpoint}${_key ? ' (key set)' : ''}`);
 
 if (inject || runOnce) {
   console.log('[demo] injecting…');

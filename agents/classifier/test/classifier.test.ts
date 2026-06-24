@@ -16,6 +16,89 @@ function makeSignal(over: Partial<Signal> = {}): Signal {
   };
 }
 
+describe('QwenClassifier (provider selection)', () => {
+  it('prefers OpenAI over Qwen when both keys are set', () => {
+    const c = new QwenClassifier({
+      bus: new AgentBus(),
+      apiKey: 'sk-test',
+      endpoint: 'https://api.openai.com/v1',
+      model: 'gpt-4o-mini',
+    });
+    // @ts-expect-error access private for test
+    expect(c.endpoint).toBe('https://api.openai.com/v1');
+    // @ts-expect-error
+    expect(c.model).toBe('gpt-4o-mini');
+    // @ts-expect-error
+    expect(c.apiKey).toBe('sk-test');
+  });
+
+  it('reads OPENAI_API_KEY from env when no explicit apiKey', () => {
+    const prevKey = process.env.OPENAI_API_KEY;
+    process.env.OPENAI_API_KEY = 'sk-env-openai';
+    try {
+      const c = new QwenClassifier({ bus: new AgentBus() });
+      // @ts-expect-error
+      expect(c.apiKey).toBe('sk-env-openai');
+      // @ts-expect-error
+      expect(c.endpoint).toBe('https://api.openai.com/v1');
+    } finally {
+      if (prevKey === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = prevKey;
+    }
+  });
+
+  it('uses heuristic when no key in any form', () => {
+    const prevOpenai = process.env.OPENAI_API_KEY;
+    const prevQwen = process.env.BITGET_QWEN_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.BITGET_QWEN_API_KEY;
+    try {
+      const c = new QwenClassifier({ bus: new AgentBus() });
+      // @ts-expect-error
+      expect(c.apiKey).toBe('');
+    } finally {
+      if (prevOpenai !== undefined) process.env.OPENAI_API_KEY = prevOpenai;
+      if (prevQwen !== undefined) process.env.BITGET_QWEN_API_KEY = prevQwen;
+    }
+  });
+
+  it('classifies via a custom endpoint when one is provided', async () => {
+    // Spin up a fake OpenAI-compatible server on a random port.
+    const http = await import('node:http');
+    let receivedBody: Record<string, unknown> | null = null;
+    let receivedAuthHeader: string | null = null;
+    const server = http.createServer((req, res) => {
+      let body = '';
+      req.on('data', (c) => (body += c));
+      req.on('end', () => {
+        receivedBody = JSON.parse(body) as Record<string, unknown>;
+        receivedAuthHeader = req.headers.authorization ?? null;
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({
+          choices: [{ message: { content: '{"score":0.91,"reason":"mocked-good","drop":false}' } }],
+        }));
+      });
+    });
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', () => r()));
+    const port = (server.address() as { port: number }).port;
+    try {
+      const c = new QwenClassifier({
+        bus: new AgentBus(),
+        endpoint: `http://127.0.0.1:${port}/v1`,
+        model: 'mock-model',
+        apiKey: 'sk-mock',
+      });
+      const v = await c.classify(makeSignal());
+      expect(v.score).toBeCloseTo(0.91, 2);
+      expect(v.drop).toBe(false);
+      expect(receivedAuthHeader).toBe('Bearer sk-mock');
+      expect((receivedBody as { model: string }).model).toBe('mock-model');
+    } finally {
+      server.close();
+    }
+  });
+});
+
 describe('QwenClassifier (heuristic fallback when no key)', () => {
   const c = new QwenClassifier({ bus: new AgentBus() }); // no apiKey → heuristic
 

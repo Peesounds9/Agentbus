@@ -94,6 +94,17 @@ export BITGET_QWEN_API_KEY=sk-...
 node scripts/demo-two-agents.mjs --inject
 ```
 
+### With OpenAI (if you don't have a Qwen key)
+
+```bash
+export OPENAI_API_KEY=sk-...
+node scripts/demo-two-agents.mjs --inject
+# dashboard shows classifier=openai
+```
+
+See [`docs/llm-providers.md`](./docs/llm-providers.md) for OpenRouter,
+Azure, Ollama, etc.
+
 This routes through `https://hackathon.bitgetops.com/v1` (model
 `qwen3.6-plus`) — the same proxy every Bitget hackathon participant uses.
 
@@ -184,6 +195,7 @@ systems."* AgentBus hits all three:
 - [MCP usage with Claude Code / Cursor](./docs/mcp.md)
 - [Redis transport (multi-process bus)](./docs/redis.md)
 - [Qwen classifier wiring details](./docs/qwen.md)
+- [LLM providers (OpenAI, Qwen, Ollama, etc)](./docs/llm-providers.md)
 - [Two-agent cooperating demo guide](./docs/two-agent-demo.md)
 - [Deploying to Railway](./docs/deploy-railway.md)
 - [Live Bitget trading on Railway](./docs/deploy-railway-live.md) *(read before enabling AGENTBUS_MODE=live)*
