@@ -185,6 +185,8 @@ systems."* AgentBus hits all three:
 - [Redis transport (multi-process bus)](./docs/redis.md)
 - [Qwen classifier wiring details](./docs/qwen.md)
 - [Two-agent cooperating demo guide](./docs/two-agent-demo.md)
+- [Deploying to Railway](./docs/deploy-railway.md)
+- [Live Bitget trading on Railway](./docs/deploy-railway-live.md) *(read before enabling AGENTBUS_MODE=live)*
 - [Hackathon submission mapping](./docs/hackathon.md)
 
 ---
