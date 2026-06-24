@@ -1,0 +1,28 @@
+# Railway config — https://docs.railway.app/reference/config-as-code
+#
+# Drop this repo on Railway as a "Deploy from GitHub repo" and the Dockerfile
+# above takes care of the rest. No `railway up` CLI needed.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "./Dockerfile"
+
+[deploy]
+# Restart if the dashboard crashes — Railway's default healthcheck path is /healthz,
+# but our dashboard exposes /, so we override:
+healthcheckPath = "/"
+healthcheckTimeout = 30
+
+# Start in paper mode by default. Override with a Railway env var for live trading.
+startCommand = "node scripts/demo-two-agents.mjs --port=${PORT:-8787}"
+
+# Restart policy: always (the dashboard is the whole product).
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+# Suggested env vars (set these in the Railway dashboard):
+#   PORT             Railway injects this automatically; we honor it.
+#   AGENTBUS_MODE    paper (default) | live
+#   BITGET_QWEN_API_KEY   (optional) enables the real Qwen classifier.
+#   REDIS_URL        (optional) enables the Redis transport for multi-process bus.
+#   BITGET_API_KEY / BITGET_SECRET_KEY / BITGET_PASSPHRASE   (only needed for live)

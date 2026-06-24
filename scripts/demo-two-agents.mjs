@@ -25,7 +25,7 @@ const arg = (n, d) => {
   return f ? f.slice(n.length + 3) : d;
 };
 
-const port = Number(arg('port', '8787'));
+const port = Number(arg('port', process.env.PORT ?? '8787'));
 const cash = Number(arg('cash', '10000'));
 const log = resolve(ROOT, arg('log', 'examples/two-agent-demo/session.jsonl'));
 const inject = process.argv.includes('--inject');

@@ -1,0 +1,12 @@
+# Keep the Docker context small.
+node_modules
+**/node_modules
+**/dist
+**/.git
+**/.github
+**/coverage
+**/*.log
+**/.DS_Store
+logs
+skills
+install-skill
