@@ -24,7 +24,10 @@ const conf = Number(arg('confidence', '0.7'));
 const why = arg('rationale', 'demo signal from publish-signal.mjs');
 
 const bus = new AgentBus();
-const classifier = startClassifier({ bus });
+const classifier = startClassifier({
+  bus,
+  apiKey: process.env.BITGET_QWEN_API_KEY ?? process.env.QWEN_API_KEY ?? process.env.OPENAI_API_KEY,
+});
 
 bus.publish(`signal.raw.${sym.toLowerCase()}`, 'signal', {
   symbol: sym,

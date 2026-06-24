@@ -32,8 +32,11 @@ describe('QwenClassifier (provider selection)', () => {
     expect(c.apiKey).toBe('sk-test');
   });
 
-  it('reads OPENAI_API_KEY from env when no explicit apiKey', () => {
-    const prevKey = process.env.OPENAI_API_KEY;
+  it('reads OPENAI_API_KEY from env when no Qwen key is set', () => {
+    const prevQwen = process.env.BITGET_QWEN_API_KEY;
+    const prevOpenai = process.env.OPENAI_API_KEY;
+    delete process.env.BITGET_QWEN_API_KEY;
+    delete process.env.QWEN_API_KEY;
     process.env.OPENAI_API_KEY = 'sk-env-openai';
     try {
       const c = new QwenClassifier({ bus: new AgentBus() });
@@ -42,16 +45,39 @@ describe('QwenClassifier (provider selection)', () => {
       // @ts-expect-error
       expect(c.endpoint).toBe('https://api.openai.com/v1');
     } finally {
-      if (prevKey === undefined) delete process.env.OPENAI_API_KEY;
-      else process.env.OPENAI_API_KEY = prevKey;
+      if (prevQwen === undefined) delete process.env.BITGET_QWEN_API_KEY;
+      else process.env.BITGET_QWEN_API_KEY = prevQwen;
+      if (prevOpenai === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = prevOpenai;
+    }
+  });
+
+  it('prefers Qwen over OpenAI when both keys are set', () => {
+    const prevQwen = process.env.BITGET_QWEN_API_KEY;
+    const prevOpenai = process.env.OPENAI_API_KEY;
+    process.env.BITGET_QWEN_API_KEY = 'sk-qwen';
+    process.env.OPENAI_API_KEY = 'sk-openai';
+    try {
+      const c = new QwenClassifier({ bus: new AgentBus() });
+      // @ts-expect-error
+      expect(c.apiKey).toBe('sk-qwen');
+      // @ts-expect-error
+      expect(c.endpoint).toBe('https://hackathon.bitgetops.com/v1');
+    } finally {
+      if (prevQwen === undefined) delete process.env.BITGET_QWEN_API_KEY;
+      else process.env.BITGET_QWEN_API_KEY = prevQwen;
+      if (prevOpenai === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = prevOpenai;
     }
   });
 
   it('uses heuristic when no key in any form', () => {
     const prevOpenai = process.env.OPENAI_API_KEY;
     const prevQwen = process.env.BITGET_QWEN_API_KEY;
+    const prevQwenGeneric = process.env.QWEN_API_KEY;
     delete process.env.OPENAI_API_KEY;
     delete process.env.BITGET_QWEN_API_KEY;
+    delete process.env.QWEN_API_KEY;
     try {
       const c = new QwenClassifier({ bus: new AgentBus() });
       // @ts-expect-error
@@ -59,6 +85,7 @@ describe('QwenClassifier (provider selection)', () => {
     } finally {
       if (prevOpenai !== undefined) process.env.OPENAI_API_KEY = prevOpenai;
       if (prevQwen !== undefined) process.env.BITGET_QWEN_API_KEY = prevQwen;
+      if (prevQwenGeneric !== undefined) process.env.QWEN_API_KEY = prevQwenGeneric;
     }
   });
 

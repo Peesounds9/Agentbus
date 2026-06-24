@@ -42,7 +42,7 @@ const demo = new CoopDemo({
   paperCashUsdt: cash,
   logPath: log,
   dashboardPort: runOnce ? 0 : port,
-  qwenApiKey: process.env.OPENAI_API_KEY ?? process.env.BITGET_QWEN_API_KEY,
+  qwenApiKey: process.env.BITGET_QWEN_API_KEY ?? process.env.QWEN_API_KEY ?? process.env.OPENAI_API_KEY,
 });
 console.log('[demo] before start');
 await demo.start();
@@ -51,9 +51,13 @@ console.log('[demo] after start');
 console.log(`[demo] bus id = ${demo.bus.id}`);
 console.log(`[demo] dashboard: http://localhost:${port}`);
 console.log(`[demo] log: ${log}`);
-const _key = process.env.OPENAI_API_KEY ?? process.env.BITGET_QWEN_API_KEY;
-const _endpoint = process.env.OPENAI_BASE_URL ?? (process.env.OPENAI_API_KEY ? 'openai' : process.env.BITGET_QWEN_API_KEY ? 'qwen' : 'heuristic');
-console.log(`[demo] agents: ${demo.bus.inspect().subscribers} subscribers, classifier=${_endpoint}${_key ? ' (key set)' : ''}`);
+const _key = process.env.BITGET_QWEN_API_KEY ?? process.env.QWEN_API_KEY ?? process.env.OPENAI_API_KEY;
+const _provider = process.env.BITGET_QWEN_API_KEY || process.env.QWEN_API_KEY
+  ? 'qwen'
+  : process.env.OPENAI_API_KEY
+    ? 'openai'
+    : 'heuristic';
+console.log(`[demo] agents: ${demo.bus.inspect().subscribers} subscribers, classifier=${_provider}${_key ? ' (key set)' : ''}`);
 
 if (inject || runOnce) {
   console.log('[demo] injecting…');

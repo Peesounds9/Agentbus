@@ -84,22 +84,35 @@ export class QwenClassifier {
   private timeoutMs: number;
 
   constructor(opts: ClassifierOptions) {
-    this.endpoint = opts.endpoint
-      ?? process.env.QWEN_ENDPOINT
-      ?? process.env.OPENAI_BASE_URL                              // OpenAI-compatible override
+    // ── Provider priority ──
+    // 1. Qwen (Bitget hackathon proxy) — preferred
+    // 2. Qwen (generic) — same model family
+    // 3. OpenAI / OpenAI-compatible — fallback
+    // 4. Heuristic — last resort, no network
+
+    const qwenKey = opts.apiKey
+      ?? process.env.BITGET_QWEN_API_KEY
+      ?? process.env.QWEN_API_KEY;
+    const openaiKey = qwenKey ? undefined : (opts.apiKey ?? process.env.OPENAI_API_KEY);
+
+    const qwenEndpoint = opts.endpoint
       ?? process.env.BITGET_QWEN_ENDPOINT
-      ?? (process.env.OPENAI_API_KEY ? 'https://api.openai.com/v1'
-         : process.env.BITGET_QWEN_API_KEY ? 'https://hackathon.bitgetops.com/v1'
-         : '');
+      ?? process.env.QWEN_ENDPOINT
+      ?? (process.env.BITGET_QWEN_API_KEY ? 'https://hackathon.bitgetops.com/v1' : undefined);
+    const openaiEndpoint = qwenEndpoint ? undefined : (
+      opts.endpoint
+      ?? process.env.OPENAI_BASE_URL
+      ?? (process.env.OPENAI_API_KEY ? 'https://api.openai.com/v1' : undefined)
+    );
+
+    this.endpoint = qwenEndpoint ?? openaiEndpoint ?? '';
+    this.apiKey = qwenKey ?? openaiKey ?? '';
+
     this.model = opts.model
+      ?? process.env.BITGET_QWEN_MODEL
       ?? process.env.QWEN_MODEL
       ?? process.env.OPENAI_MODEL
-      ?? 'gpt-4o-mini';                                            // sensible default for OpenAI users
-    this.apiKey = opts.apiKey
-      ?? process.env.OPENAI_API_KEY
-      ?? process.env.QWEN_API_KEY
-      ?? process.env.BITGET_QWEN_API_KEY
-      ?? '';
+      ?? (qwenKey ? 'qwen3.6-plus' : 'gpt-4o-mini');
     this.dropThreshold = opts.dropThreshold ?? 0.4;
     this.timeoutMs = opts.timeoutMs ?? 8000;
   }
