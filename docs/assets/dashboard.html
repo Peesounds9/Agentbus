@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AgentBus — two-agent cooperating demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d;
+    --fg: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922; --purple: #bc8cff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 -apple-system, system-ui, sans-serif; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 24px; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .bus { color: var(--muted); font-size: 12px; font-family: ui-monospace, monospace; }
+  main { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 16px 24px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; min-height: 320px; }
+  .panel h2 { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .agent-id { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { padding: 8px; border-bottom: 1px solid var(--border); font-family: ui-monospace, monospace; font-size: 12px; }
+  li:last-child { border-bottom: none; }
+  .topic { color: var(--accent); }
+  .from { color: var(--muted); }
+  .payload { color: var(--fg); white-space: pre-wrap; word-break: break-word; max-height: 80px; overflow: auto; }
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px; }
+  .badge.green { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge.red { background: rgba(248,81,73,0.15); color: var(--red); }
+  .badge.yellow { background: rgba(210,153,34,0.15); color: var(--yellow); }
+  .badge.purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .stats { display: flex; gap: 16px; margin: 8px 0 16px; font-size: 12px; color: var(--muted); }
+  .stat { padding: 4px 10px; background: var(--bg); border-radius: 4px; border: 1px solid var(--border); }
+  .stat strong { color: var(--fg); font-weight: 600; }
+  .footer { padding: 12px 24px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+  <header>
+    <h1>AgentBus <span style="color:var(--muted);font-weight:400">— two cooperating agents</span></h1>
+    <span class="bus">bus: gxgvxu7741</span>
+  </header>
+  <main>
+    <section class="panel">
+      <h2>📡 Signaler <span class="agent-id">signaler</span></h2>
+      <p style="color:var(--muted);font-size:12px;margin:0 0 12px">Publishes raw signals on <code>signal.raw.&lt;sym&gt;</code>.</p>
+      <div class="stats" id="stats-signaler"></div>
+      <ul id="list-signaler"></ul>
+    </section>
+    <section class="panel">
+      <h2>🤖 Classifier <span class="agent-id">qwen-classifier</span></h2>
+      <p style="color:var(--muted);font-size:12px;margin:0 0 12px">Qwen 3.6-plus via hackathon proxy → score &amp; filter. Falls back to heuristic if no key.</p>
+      <div class="stats" id="stats-classifier"></div>
+      <ul id="list-scored"></ul>
+      <h2 style="margin-top:16px">🚫 Noise</h2>
+      <ul id="list-noise"></ul>
+    </section>
+    <section class="panel">
+      <h2>⚡ Executor <span class="agent-id">executor</span></h2>
+      <p style="color:var(--muted);font-size:12px;margin:0 0 12px">Listens to <code>signal.scored</code> (quality ≥ 0.6). Submits orders via Bitget adapter (paper).</p>
+      <div class="stats" id="stats-executor"></div>
+      <ul id="list-orders"></ul>
+      <h2 style="margin-top:16px">💰 Fills</h2>
+      <ul id="list-fills"></ul>
+    </section>
+  </main>
+  <div class="footer">Auto-refresh every 1.5s · JSON state at <code>/api/state</code></div>
+<script>
+const fmt = (x) => JSON.stringify(x, null, 2);
+async function refresh() {
+  try {
+    const res = await fetch('/api/state');
+    const s = await res.json();
+    document.getElementById('stats-signaler').innerHTML =
+      '<span class="stat"><strong>' + s.signals.length + '</strong> signals</span>' +
+      '<span class="stat">bus <strong>' + s.inspect.historySize + '</strong> msgs</span>';
+    document.getElementById('list-signaler').innerHTML = s.signals
+      .filter(m => m.topic.startsWith('signal.raw.'))
+      .map(m => '<li><span class="topic">' + m.topic + '</span> <span class="from">from ' + m.from + '</span><div class="payload">' + fmt(m.payload) + '</div></li>')
+      .join('') || '<li><span class="from">no signals yet — POST a signal or use the demo script</span></li>';
+    document.getElementById('stats-classifier').innerHTML =
+      '<span class="stat"><strong>' + s.signals.filter(m => m.topic === 'signal.scored').length + '</strong> passed</span>' +
+      '<span class="stat"><strong>' + s.noise.length + '</strong> dropped</span>';
+    document.getElementById('list-scored').innerHTML = s.signals
+      .filter(m => m.topic === 'signal.scored')
+      .map(m => {
+        const q = (m.payload && m.payload.quality) || 0;
+        const cls = q >= 0.7 ? 'green' : q >= 0.5 ? 'yellow' : 'red';
+        return '<li><span class="badge ' + cls + '">q=' + q.toFixed(2) + '</span> <span class="topic">' + m.payload.symbol + '</span> ' + m.payload.direction + ' <span class="from">conf=' + m.payload.confidence + '</span><div class="payload">' + fmt(m.payload) + '</div></li>';
+      })
+      .join('') || '<li><span class="from">waiting for scored signals…</span></li>';
+    document.getElementById('list-noise').innerHTML = s.noise
+      .map(m => '<li><span class="badge red">drop</span> ' + m.payload.reason + '<div class="payload">' + fmt(m.payload.signal) + '</div></li>')
+      .join('') || '<li><span class="from">none dropped yet</span></li>';
+    document.getElementById('stats-executor').innerHTML =
+      '<span class="stat"><strong>' + s.orders.length + '</strong> orders</span>' +
+      '<span class="stat"><strong>' + s.fills.length + '</strong> fills</span>';
+    document.getElementById('list-orders').innerHTML = s.orders
+      .map(m => '<li><span class="badge purple">' + m.payload.side + '</span> <span class="topic">' + m.payload.symbol + '</span> size=' + m.payload.size + ' <span class="from">cid=' + m.payload.clientOrderId + '</span></li>')
+      .join('') || '<li><span class="from">no orders yet — the executor only fires on q ≥ 0.6</span></li>';
+    document.getElementById('list-fills').innerHTML = s.fills
+      .map(m => '<li><span class="badge green">fill</span> ' + m.payload.symbol + ' ' + m.payload.side + ' ' + m.payload.qty + ' @ ' + m.payload.price + '</li>')
+      .join('') || '<li><span class="from">no fills yet</span></li>';
+  } catch (e) {
+    console.error(e);
+  }
+}
+refresh();
+setInterval(refresh, 1500);
+</script>
+</body>
+</html>
