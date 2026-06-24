@@ -41,9 +41,11 @@ export class PaperSessionRecorder {
     );
   }
 
-  stop(): void {
+  stop(): Promise<void> {
     if (this.subId) this.busRef.unsubscribe(this.subId);
-    this.stream.end();
+    return new Promise((resolve) => {
+      this.stream.end(() => resolve());
+    });
   }
 
   /** Compute paper PnL by marking positions against `marks`. */

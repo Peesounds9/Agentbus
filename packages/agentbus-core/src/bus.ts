@@ -23,6 +23,7 @@ import {
   OrderUpdate,
   Fill,
 } from './types.js';
+import type { BusTransport } from './transport.js';
 
 export interface AgentBusOptions {
   /** When true, the bus keeps an in-memory ring buffer of recent messages. */
@@ -51,9 +52,7 @@ export class AgentBus {
   private readonly opts: Required<AgentBusOptions>;
   private readonly subscribers = new Map<string, Subscriber>();
   private readonly history: BusMessage[] = [];
-  private readonly transports = new Set<{
-    send: (raw: string) => void | Promise<void>;
-  }>();
+  private readonly transports = new Set<BusTransport>();
   private readonly registeredKinds = new Set<MessageKind>();
   private dropped = 0;
 
@@ -73,13 +72,18 @@ export class AgentBus {
     this.registeredKinds.add(kind);
   }
 
-  /** Attach a wire transport (e.g. WebSocket). Receives serialized messages. */
-  attachTransport(t: { send: (raw: string) => void | Promise<void> }): void {
+  /** Attach a typed {@link BusTransport}. The bus will call start/stop and
+   *  forward every published message through {@link BusTransport.send}.
+   */
+  attachTransport(t: BusTransport): void {
     this.transports.add(t);
+    t.start(this);
   }
 
-  detachTransport(t: { send: (raw: string) => void | Promise<void> }): void {
-    this.transports.delete(t);
+  detachTransport(t: BusTransport): void {
+    if (this.transports.delete(t)) {
+      void t.stop();
+    }
   }
 
   /**
@@ -165,6 +169,7 @@ export class AgentBus {
     dropped: number;
     transports: number;
     queues: Array<{ id: string; pattern: string; depth: number }>;
+    transportStats: Array<{ id: string; stats: Record<string, unknown> }>;
   } {
     return {
       id: this.id,
@@ -177,6 +182,7 @@ export class AgentBus {
         pattern: s.pattern,
         depth: s.queue.length,
       })),
+      transportStats: Array.from(this.transports).map((t) => ({ id: t.id, stats: t.stats() })),
     };
   }
 
@@ -213,9 +219,8 @@ export class AgentBus {
     }
 
     // fan out to transports (fire and forget)
-    const raw = AgentBus.serialize(msg);
     for (const t of this.transports) {
-      Promise.resolve(t.send(raw)).catch(() => undefined);
+      Promise.resolve(t.send(msg)).catch(() => undefined);
     }
   }
 

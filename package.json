@@ -9,18 +9,29 @@
     "dev": "pnpm -r --parallel dev",
     "test": "pnpm -r run test",
     "smoke": "node scripts/smoke.mjs",
+    "smoke:two": "node scripts/smoke-two-agents.mjs",
     "demo": "node scripts/demo-paper-session.mjs",
+    "demo:two": "node scripts/demo-two-agents.mjs --once --inject",
     "backtest": "node scripts/run-backtest.mjs"
   },
   "engines": {
     "node": ">=18"
   },
-  "keywords": ["bitget", "agent-hub", "mcp", "trading", "agents", "pub-sub"],
+  "keywords": [
+    "bitget",
+    "agent-hub",
+    "mcp",
+    "trading",
+    "agents",
+    "pub-sub"
+  ],
   "license": "MIT",
   "devDependencies": {
-    "typescript": "^5.4.5",
+    "@types/ioredis": "^5.0.0",
     "@types/node": "^20.12.7",
+    "ioredis": "^5.11.1",
     "tsx": "^4.7.2",
+    "typescript": "^5.4.5",
     "vitest": "^1.5.0"
   }
 }
