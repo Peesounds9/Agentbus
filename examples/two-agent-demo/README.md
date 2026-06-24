@@ -91,8 +91,8 @@ in this short demo).
 ## Hashes (proves "this file was committed")
 
 ```
-4e745b4dbfc56883ee4aa2c9d3e44844b899ed24d7673fe1172672fa3faeef79  examples/two-agent-demo/session.jsonl
-04c890019215317e662937e7281fbb2fa91b6476b228ae403fa41d964ba27683  examples/paper-trading-session/session.jsonl
+37d3f0ef99063c1c6e745e673650439bcc496f54ba3c51e540cd589dccabb815  examples/two-agent-demo/session.jsonl
+e4e0e853fc7b5ca204670baafde7b8481c37246a6954451f079170d28dc52ff9  examples/paper-trading-session/session.jsonl
 ```
 
 (Hashes will change on re-runs because timestamps are real wall-clock.
