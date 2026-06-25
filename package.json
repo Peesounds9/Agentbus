@@ -12,6 +12,7 @@
     "smoke:two": "node scripts/smoke-two-agents.mjs",
     "demo": "node scripts/demo-paper-session.mjs",
     "demo:two": "node scripts/demo-two-agents.mjs --once --inject",
+    "record": "node scripts/record-live-usage.mjs",
     "backtest": "node scripts/run-backtest.mjs"
   },
   "engines": {
